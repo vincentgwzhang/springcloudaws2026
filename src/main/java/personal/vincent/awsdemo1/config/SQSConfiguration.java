@@ -27,7 +27,10 @@ public class SQSConfiguration {
 	@Bean
 	public SqsAsyncClient sqsAsyncClient() {
 		log.info("Initializing AWS SQS async client");
-		return SqsAsyncClient.create();
+		return SqsAsyncClient.builder()
+			.overrideConfiguration(configuration -> configuration
+				.addExecutionInterceptor(new OtelSqsTraceHeaderInterceptor()))
+			.build();
 	}
 
 	/**
