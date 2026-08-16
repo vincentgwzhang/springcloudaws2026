@@ -1,17 +1,31 @@
+# ---------------------------
+# Stage 1: Build
+# ---------------------------
 FROM amazoncorretto:25 AS builder
+
 WORKDIR /build
 
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
+RUN dnf install -y maven \
+    && dnf clean all
 
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline
-COPY src/ src/
-RUN ./mvnw clean package -DskipTests
+COPY pom.xml ./
+
+RUN mvn dependency:go-offline
+
+COPY src ./src
+
+RUN mvn clean package -DskipTests
 
 
-FROM eclipse-temurin:25-jre
+# ---------------------------
+# Stage 2: Runtime
+# ---------------------------
+FROM amazoncorretto:25-alpine
+
 WORKDIR /app
+
 COPY --from=builder /build/target/*.jar app.jar
+
 EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
